@@ -1,3 +1,6 @@
+use std::fmt::format;
+use serde_json::Value;
+
 use crate::client::*;
 use crate::errors::*;
 use crate::futures::rest_model::*;
@@ -5,49 +8,58 @@ use crate::rest_model::{
     BookTickers, KlineSummaries, KlineSummary, PairAndWindowQuery, PairQuery, SymbolPrice, Tickers,
 };
 use crate::util::*;
-use serde_json::Value;
+
+use super::router::*;
 
 //TODO : Validate intervals and start/end times in history queries
 //TODO : find out the repartition of kline/candlestick columns in the future kline rows
 //TODO : make limit optional where applicable
 
-#[derive(Clone)]
 pub struct FuturesMarket {
     pub client: Client,
     pub recv_window: u64,
+    pub router: fn(Futures) -> String,
 }
 
 impl FuturesMarket {
+    fn api(&self, f:Futures) -> String {
+        let path = (self.router)(f.clone());
+        if path.ne("null") {
+            panic!("not supported {:?} yet!!",f)
+        }
+        return path
+    }
+
     // Order book (Default 100; max 1000)
     pub async fn get_depth<S>(&self, symbol: S) -> Result<OrderBook>
-    where
-        S: Into<String>,
+        where
+            S: Into<String>,
     {
         self.client
-            .get_d("/fapi/v1/depth", Some(PairQuery { symbol: symbol.into() }))
+            .get_d((self.router)(Futures::Depth).as_str(), Some(PairQuery { symbol: symbol.into() }))
             .await
     }
 
     /// Get trades for a pair
     pub async fn get_trades<S>(&self, symbol: S) -> Result<Trades>
-    where
-        S: Into<String>,
+        where
+            S: Into<String>,
     {
         self.client
-            .get_d("/fapi/v1/trades", Some(PairQuery { symbol: symbol.into() }))
+            .get_d((self.router)(Futures::Trades).as_str(), Some(PairQuery { symbol: symbol.into() }))
             .await
     }
 
     /// Get historical trades
     pub async fn get_historical_trades<S1, S2, S3>(&self, symbol: S1, from_id: S2, limit: S3) -> Result<Trades>
-    where
-        S1: Into<String>,
-        S2: Into<Option<u64>>,
-        S3: Into<u16>,
+        where
+            S1: Into<String>,
+            S2: Into<Option<u64>>,
+            S3: Into<u16>,
     {
         self.client
             .get_signed_p(
-                "/fapi/v1/historicalTrades",
+                (self.router)(Futures::HistoricalTrades).as_str(),
                 Some(HistoryQuery {
                     start_time: None,
                     end_time: None,
@@ -71,16 +83,16 @@ impl FuturesMarket {
         end_time: S4,
         limit: S5,
     ) -> Result<AggTrades>
-    where
-        S1: Into<String>,
-        S2: Into<Option<u64>>,
-        S3: Into<Option<u64>>,
-        S4: Into<Option<u64>>,
-        S5: Into<u16>,
+        where
+            S1: Into<String>,
+            S2: Into<Option<u64>>,
+            S3: Into<Option<u64>>,
+            S4: Into<Option<u64>>,
+            S5: Into<u16>,
     {
         self.client
             .get_signed_p(
-                "/fapi/v1/aggTrades",
+                (self.router)(Futures::AggTrades).as_str(),
                 Some(HistoryQuery {
                     start_time: start_time.into(),
                     end_time: end_time.into(),
@@ -103,15 +115,15 @@ impl FuturesMarket {
         end_time: S4,
         limit: S5,
     ) -> Result<Vec<FundingRate>>
-    where
-        S1: Into<String>,
-        S3: Into<Option<u64>>,
-        S4: Into<Option<u64>>,
-        S5: Into<u16>,
+        where
+            S1: Into<String>,
+            S3: Into<Option<u64>>,
+            S4: Into<Option<u64>>,
+            S5: Into<u16>,
     {
         self.client
             .get_signed_p(
-                "/fapi/v1/fundingRate",
+                (self.router)(Futures::FundingRate).as_str(),
                 Some(HistoryQuery {
                     start_time: start_time.into(),
                     end_time: end_time.into(),
@@ -135,12 +147,12 @@ impl FuturesMarket {
         end_time: S4,
         limit: S5,
     ) -> Result<Vec<OpenInterestHistory>>
-    where
-        S1: Into<String>,
-        S2: Into<String>,
-        S3: Into<Option<u64>>,
-        S4: Into<Option<u64>>,
-        S5: Into<u16>,
+        where
+            S1: Into<String>,
+            S2: Into<String>,
+            S3: Into<Option<u64>>,
+            S4: Into<Option<u64>>,
+            S5: Into<u16>,
     {
         let query = HistoryQuery {
             start_time: start_time.into(),
@@ -166,12 +178,12 @@ impl FuturesMarket {
         end_time: S4,
         limit: S5,
     ) -> Result<Vec<LongShortRatio>>
-    where
-        S1: Into<String>,
-        S2: Into<String>,
-        S3: Into<Option<u64>>,
-        S4: Into<Option<u64>>,
-        S5: Into<u16>,
+        where
+            S1: Into<String>,
+            S2: Into<String>,
+            S3: Into<Option<u64>>,
+            S4: Into<Option<u64>>,
+            S5: Into<u16>,
     {
         let query = HistoryQuery {
             start_time: start_time.into(),
@@ -197,12 +209,12 @@ impl FuturesMarket {
         end_time: S4,
         limit: S5,
     ) -> Result<Vec<LongShortRatio>>
-    where
-        S1: Into<String>,
-        S2: Into<String>,
-        S3: Into<Option<u64>>,
-        S4: Into<Option<u64>>,
-        S5: Into<u16>,
+        where
+            S1: Into<String>,
+            S2: Into<String>,
+            S3: Into<Option<u64>>,
+            S4: Into<Option<u64>>,
+            S5: Into<u16>,
     {
         let query = HistoryQuery {
             start_time: start_time.into(),
@@ -228,12 +240,12 @@ impl FuturesMarket {
         end_time: S4,
         limit: S5,
     ) -> Result<Vec<LongShortRatio>>
-    where
-        S1: Into<String>,
-        S2: Into<String>,
-        S3: Into<Option<u64>>,
-        S4: Into<Option<u64>>,
-        S5: Into<u16>,
+        where
+            S1: Into<String>,
+            S2: Into<String>,
+            S3: Into<Option<u64>>,
+            S4: Into<Option<u64>>,
+            S5: Into<u16>,
     {
         let query = HistoryQuery {
             start_time: start_time.into(),
@@ -263,12 +275,12 @@ impl FuturesMarket {
         end_time: S4,
         limit: S5,
     ) -> Result<Vec<LongShortRatio>>
-    where
-        S1: Into<String>,
-        S2: Into<String>,
-        S3: Into<Option<u64>>,
-        S4: Into<Option<u64>>,
-        S5: Into<u16>,
+        where
+            S1: Into<String>,
+            S2: Into<String>,
+            S3: Into<Option<u64>>,
+            S4: Into<Option<u64>>,
+            S5: Into<u16>,
     {
         let query = HistoryQuery {
             start_time: start_time.into(),
@@ -295,12 +307,12 @@ impl FuturesMarket {
         start_time: S4,
         end_time: S5,
     ) -> Result<KlineSummaries>
-    where
-        S1: Into<String>,
-        S2: Into<String>,
-        S3: Into<u16>,
-        S4: Into<Option<u64>>,
-        S5: Into<Option<u64>>,
+        where
+            S1: Into<String>,
+            S2: Into<String>,
+            S3: Into<u16>,
+            S4: Into<Option<u64>>,
+            S5: Into<Option<u64>>,
     {
         let query = HistoryQuery {
             start_time: start_time.into(),
@@ -311,7 +323,7 @@ impl FuturesMarket {
             from_id: None,
             period: None,
         };
-        let data: Vec<Vec<Value>> = self.client.get_d("/fapi/v1/klines", Some(query)).await?;
+        let data: Vec<Vec<Value>> = self.client.get_d((self.router)(Futures::Klines).as_str(), Some(query)).await?;
 
         let klines = KlineSummaries::AllKlineSummaries(
             data.iter()
@@ -346,12 +358,12 @@ impl FuturesMarket {
         start_time: S4,
         end_time: S5,
     ) -> Result<Vec<Vec<Value>>>
-    where
-        S1: Into<String>,
-        S2: Into<String>,
-        S3: Into<u16>,
-        S4: Into<Option<u64>>,
-        S5: Into<Option<u64>>,
+        where
+            S1: Into<String>,
+            S2: Into<String>,
+            S3: Into<u16>,
+            S4: Into<Option<u64>>,
+            S5: Into<Option<u64>>,
     {
         let query = HistoryQuery {
             start_time: start_time.into(),
@@ -362,7 +374,7 @@ impl FuturesMarket {
             from_id: None,
             period: None,
         };
-        let klines = self.client.get_d("/fapi/v1/lvtKlines", Some(query)).await?;
+        let klines = self.client.get_d((self.router)(Futures::LvtKlines).as_str(), Some(query)).await?;
 
         Ok(klines)
     }
@@ -379,12 +391,12 @@ impl FuturesMarket {
         start_time: S4,
         end_time: S5,
     ) -> Result<Vec<Vec<Value>>>
-    where
-        S1: Into<String>,
-        S2: Into<String>,
-        S3: Into<u16>,
-        S4: Into<Option<u64>>,
-        S5: Into<Option<u64>>,
+        where
+            S1: Into<String>,
+            S2: Into<String>,
+            S3: Into<u16>,
+            S4: Into<Option<u64>>,
+            S5: Into<Option<u64>>,
     {
         let query = HistoryQuery {
             start_time: start_time.into(),
@@ -395,7 +407,7 @@ impl FuturesMarket {
             from_id: None,
             period: None,
         };
-        let klines = self.client.get_d("/fapi/v1/markPriceKlines", Some(query)).await?;
+        let klines = self.client.get_d((self.router)(Futures::MarkPriceKlines).as_str(), Some(query)).await?;
 
         Ok(klines)
     }
@@ -412,12 +424,12 @@ impl FuturesMarket {
         start_time: S4,
         end_time: S5,
     ) -> Result<Vec<Vec<Value>>>
-    where
-        S1: Into<String>,
-        S2: Into<String>,
-        S3: Into<u16>,
-        S4: Into<Option<u64>>,
-        S5: Into<Option<u64>>,
+        where
+            S1: Into<String>,
+            S2: Into<String>,
+            S3: Into<u16>,
+            S4: Into<Option<u64>>,
+            S5: Into<Option<u64>>,
     {
         let query = HistoryQuery {
             start_time: start_time.into(),
@@ -429,7 +441,7 @@ impl FuturesMarket {
             period: None,
         };
 
-        let klines = self.client.get_d("/fapi/v1/indexPriceKlines", Some(query)).await?;
+        let klines = self.client.get_d((self.router)(Futures::IndexPriceKlines).as_str(), Some(query)).await?;
 
         Ok(klines)
     }
@@ -446,12 +458,12 @@ impl FuturesMarket {
         start_time: S4,
         end_time: S5,
     ) -> Result<Vec<Vec<Value>>>
-    where
-        S1: Into<String>,
-        S2: Into<String>,
-        S3: Into<u16>,
-        S4: Into<Option<u64>>,
-        S5: Into<Option<u64>>,
+        where
+            S1: Into<String>,
+            S2: Into<String>,
+            S3: Into<u16>,
+            S4: Into<Option<u64>>,
+            S5: Into<Option<u64>>,
     {
         let query = HistoryQuery {
             start_time: start_time.into(),
@@ -462,73 +474,73 @@ impl FuturesMarket {
             from_id: None,
             period: None,
         };
-        let klines = self.client.get_d("/fapi/v1/continuousKlines", Some(query)).await?;
+        let klines = self.client.get_d((self.router)(Futures::ContinuousKlines).as_str(), Some(query)).await?;
 
         Ok(klines)
     }
 
     /// https://binance-docs.github.io/apidocs/futures/en/#notional-and-leverage-brackets-user_data
     pub async fn get_notional_leverage_brackets<S>(&self, symbol: S) -> Result<SymbolBrackets>
-    where
-        S: Into<String>,
+        where
+            S: Into<String>,
     {
         let p = PairAndWindowQuery {
             symbol: symbol.into(),
             recv_window: self.recv_window,
         };
         self.client
-            .get_signed_p("/fapi/v1/leverageBracket", Some(p), self.recv_window)
+            .get_signed_p((self.router)(Futures::LeverageBracket).as_str(), Some(p), self.recv_window)
             .await
     }
 
     /// https://binance-docs.github.io/apidocs/futures/en/#composite-index-symbol-information
     /// Only for composite symbols (ex: DEFIUSDT)
     pub async fn get_index_info<S>(&self, symbol: Option<S>) -> Result<PriceStats>
-    where
-        S: Into<String>,
+        where
+            S: Into<String>,
     {
         let p = symbol.map(|s| PairQuery { symbol: s.into() });
-        self.client.get_d("/fapi/v1/indexInfo", p).await
+        self.client.get_d((self.router)(Futures::IndexInfo).as_str(), p).await
     }
 
     /// 24hr ticker price change statistics
     pub async fn get_24h_price_stats<S>(&self, symbol: S) -> Result<PriceStats>
-    where
-        S: Into<String>,
+        where
+            S: Into<String>,
     {
         self.client
-            .get_d("/fapi/v1/ticker/24hr", Some(PairQuery { symbol: symbol.into() }))
+            .get_d((self.router)(Futures::Ticker24hr).as_str(), Some(PairQuery { symbol: symbol.into() }))
             .await
     }
 
     /// 24hr ticker price change statistics for all symbols
     pub async fn get_all_24h_price_stats(&self) -> Result<Vec<PriceStats>> {
-        self.client.get_p("/fapi/v1/ticker/24hr", None).await
+        self.client.get_p((self.router)(Futures::Ticker24hr).as_str(), None).await
     }
 
     /// Latest price for ONE symbol.
     pub async fn get_price<S>(&self, symbol: S) -> Result<SymbolPrice>
-    where
-        S: Into<String>,
+        where
+            S: Into<String>,
     {
         self.client
-            .get_d("/fapi/v1/ticker/price", Some(PairQuery { symbol: symbol.into() }))
+            .get_d((self.router)(Futures::TickerPrice).as_str(), Some(PairQuery { symbol: symbol.into() }))
             .await
     }
 
     /// Symbols order book ticker
     /// -> Best price/qty on the order book for ALL symbols.
     pub async fn get_all_book_tickers(&self) -> Result<BookTickers> {
-        self.client.get_p("/fapi/v1/ticker/bookTicker", None).await
+        self.client.get_p((self.router)(Futures::BookTicker).as_str(), None).await
     }
 
     // -> Best price/qty on the order book for ONE symbol
     pub async fn get_book_ticker<S>(&self, symbol: S) -> Result<Tickers>
-    where
-        S: Into<String>,
+        where
+            S: Into<String>,
     {
         self.client
-            .get_d("/fapi/v1/ticker/bookTicker", Some(PairQuery { symbol: symbol.into() }))
+            .get_d((self.router)(Futures::BookTicker).as_str(), Some(PairQuery { symbol: symbol.into() }))
             .await
     }
 
@@ -536,24 +548,24 @@ impl FuturesMarket {
         if let Some(symbol) = symbol {
             Ok(vec![
                 self.client
-                    .get_d::<MarkPrice, PairQuery>("/fapi/v1/premiumIndex", Some(PairQuery { symbol }))
+                    .get_d::<MarkPrice, PairQuery>((self.router)(Futures::PremiumIndex).as_str(), Some(PairQuery { symbol }))
                     .await?,
             ])
         } else {
-            self.client.get_p("/fapi/v1/premiumIndex", None).await
+            self.client.get_p((self.router)(Futures::PremiumIndex).as_str(), None).await
         }
     }
 
     pub async fn get_all_liquidation_orders(&self) -> Result<LiquidationOrders> {
-        self.client.get_p("/fapi/v1/allForceOrders", None).await
+        self.client.get_p((self.router)(Futures::AllForceOrders).as_str(), None).await
     }
 
     pub async fn open_interest<S>(&self, symbol: S) -> Result<OpenInterest>
-    where
-        S: Into<String>,
+        where
+            S: Into<String>,
     {
         self.client
-            .get_d("/fapi/v1/openInterest", Some(PairQuery { symbol: symbol.into() }))
+            .get_d((self.router)(Futures::OpenInterest).as_str(), Some(PairQuery { symbol: symbol.into() }))
             .await
     }
 }

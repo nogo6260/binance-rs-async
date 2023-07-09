@@ -57,7 +57,6 @@ async fn main() {
 async fn user_stream() {
     let api_key_user = Some("YOUR_API_KEY".into());
     let user_stream: UserStream = Binance::new(api_key_user.clone(), None);
-
     if let Ok(answer) = user_stream.start().await {
         println!("Data Stream Started ...");
         let listen_key = answer.listen_key;

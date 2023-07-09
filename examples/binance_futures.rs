@@ -9,10 +9,11 @@ async fn main() {
     Builder::new().parse_default_env().init();
     #[cfg(feature = "futures_api")]
     general().await;
-    #[cfg(feature = "futures_api")]
-    market_data().await;
-    #[cfg(feature = "futures_api")]
-    account().await;
+    // #[cfg(feature = "futures_api")]
+    // market_data().await;
+    // #[cfg(feature = "futures_api")]
+    // account().await;
+    println!("done");
 }
 
 #[cfg(feature = "futures_api")]

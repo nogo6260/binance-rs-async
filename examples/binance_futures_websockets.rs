@@ -1,4 +1,5 @@
 #[cfg(feature = "futures_api")]
+
 #[macro_use]
 extern crate tokio;
 
@@ -10,6 +11,7 @@ use futures::stream::StreamExt;
 use serde_json::from_str;
 use tokio::sync::mpsc::UnboundedSender;
 use tokio_tungstenite::tungstenite::Message;
+
 
 use binance::futures::websockets::*;
 

@@ -1,29 +1,30 @@
 use crate::client::*;
 use crate::errors::*;
 use crate::futures::rest_model::*;
-use crate::rest_model::ServerTime;
+use crate::rest_model::{ServerTime, Success};
+use super::router::*;
 
-#[derive(Clone)]
 pub struct FuturesGeneral {
     pub client: Client,
+    pub router: fn(Futures) -> String,
 }
 
 impl FuturesGeneral {
+
     // Test connectivity
-    pub async fn ping(&self) -> Result<String> {
-        self.client.get("/fapi/v1/ping", None).await?;
-        Ok("pong".into())
+    pub async fn ping(&self) -> Result<Success> {
+        self.client.get((self.router)(Futures::Ping).as_str(), None).await
     }
 
     // Check server time
     pub async fn get_server_time(&self) -> Result<ServerTime> {
-        self.client.get_p("/fapi/v1/time", None).await
+        self.client.get_p((self.router)(Futures::Time).as_str(), None).await
     }
 
     // Obtain exchange information
     // - Current exchange trading rules and symbol information
     pub async fn exchange_info(&self) -> Result<ExchangeInformation> {
-        self.client.get_p("/fapi/v1/exchangeInfo", None).await
+        self.client.get_p((self.router)(Futures::ExchangeInfo).as_str(), None).await
     }
 
     // Get Symbol information

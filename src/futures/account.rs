@@ -1,38 +1,42 @@
 use std::collections::BTreeMap;
+use std::fmt;
 
-use super::rest_model::{
-    AccountBalance, AccountInformation, CanceledOrder, ChangeLeverageResponse, Order, OrderType, Position,
-    PositionSide, Transaction, WorkingType,
-};
+use serde::Serializer;
+
 use crate::account::OrderCancellation;
 use crate::client::Client;
 use crate::errors::*;
 use crate::rest_model::{OrderSide, TimeInForce};
 use crate::rest_model::{PairAndWindowQuery, PairQuery};
 use crate::util::*;
-use serde::Serializer;
-use std::fmt;
 
-#[derive(Clone)]
+use super::router::*;
+use super::router::Futures;
+use super::rest_model::{
+    AccountBalance, AccountInformation, CanceledOrder, ChangeLeverageResponse, Order, OrderType, Position,
+    PositionSide, Transaction, WorkingType,
+};
+
 pub struct FuturesAccount {
     pub client: Client,
     pub recv_window: u64,
+    pub router: fn(Futures) -> String,
 }
 
 /// Serialize bool as str
 fn serialize_as_str<S, T>(t: &T, serializer: S) -> std::result::Result<S::Ok, S::Error>
-where
-    S: Serializer,
-    T: fmt::Display,
+    where
+        S: Serializer,
+        T: fmt::Display,
 {
     serializer.collect_str(t)
 }
 
 /// Serialize opt bool as str
 fn serialize_opt_as_uppercase<S, T>(t: &Option<T>, serializer: S) -> std::result::Result<S::Ok, S::Error>
-where
-    S: Serializer,
-    T: ToString,
+    where
+        S: Serializer,
+        T: ToString,
 {
     match *t {
         Some(ref v) => serializer.serialize_some(&v.to_string().to_uppercase()),
@@ -73,13 +77,13 @@ struct ChangePositionModeRequest {
 impl FuturesAccount {
     pub async fn place_order(&self, order: OrderRequest) -> Result<Transaction> {
         self.client
-            .post_signed_p("/fapi/v1/order", order, self.recv_window)
+            .post_signed_p((self.router)(Futures::Order).as_str(), order, self.recv_window)
             .await
     }
 
     pub async fn get_open_orders(&self, symbol: impl Into<String>) -> Result<Vec<Order>> {
         let payload = build_signed_request_p([("symbol", symbol.into())], self.recv_window)?;
-        self.client.get_signed("/fapi/v1/openOrders", &payload).await
+        self.client.get_signed((self.router)(Futures::OpenOrders).as_str(), &payload).await
     }
 
     pub async fn limit_buy(
@@ -138,9 +142,9 @@ impl FuturesAccount {
 
     // Place a MARKET order - BUY
     pub async fn market_buy<S, F>(&self, symbol: S, qty: F) -> Result<Transaction>
-    where
-        S: Into<String>,
-        F: Into<f64>,
+        where
+            S: Into<String>,
+            F: Into<f64>,
     {
         let order = OrderRequest {
             symbol: symbol.into(),
@@ -164,9 +168,9 @@ impl FuturesAccount {
 
     // Place a MARKET order - SELL
     pub async fn market_sell<S, F>(&self, symbol: S, qty: F) -> Result<Transaction>
-    where
-        S: Into<String>,
-        F: Into<f64>,
+        where
+            S: Into<String>,
+            F: Into<f64>,
     {
         let order: OrderRequest = OrderRequest {
             symbol: symbol.into(),
@@ -191,16 +195,16 @@ impl FuturesAccount {
     /// Place a cancellation order
     pub async fn cancel_order(&self, o: OrderCancellation) -> Result<CanceledOrder> {
         let recv_window = o.recv_window.unwrap_or(self.recv_window);
-        self.client.delete_signed_p("/fapi/v1/order", &o, recv_window).await
+        self.client.delete_signed_p((self.router)(Futures::Order).as_str(), &o, recv_window).await
     }
 
     pub async fn position_information<S>(&self, symbol: S) -> Result<Vec<Position>>
-    where
-        S: Into<String>,
+        where
+            S: Into<String>,
     {
         self.client
             .get_signed_p(
-                "/fapi/v2/positionRisk",
+                (self.router)(Futures::PositionRisk).as_str(),
                 Some(PairAndWindowQuery {
                     symbol: symbol.into(),
                     recv_window: self.recv_window,
@@ -213,31 +217,31 @@ impl FuturesAccount {
     pub async fn account_information(&self) -> Result<AccountInformation> {
         // needs to be changed to smth better later
         let payload = build_signed_request(BTreeMap::<String, String>::new(), self.recv_window)?;
-        self.client.get_signed_d("/fapi/v2/account", &payload).await
+        self.client.get_signed_d((self.router)(Futures::Account).as_str(), &payload).await
     }
 
     pub async fn account_balance(&self) -> Result<Vec<AccountBalance>> {
         let parameters = BTreeMap::<String, String>::new();
         let request = build_signed_request(parameters, self.recv_window)?;
-        self.client.get_signed_d("/fapi/v2/balance", request.as_str()).await
+        self.client.get_signed_d((self.router)(Futures::Balance).as_str(), request.as_str()).await
     }
 
     pub async fn change_initial_leverage<S>(&self, symbol: S, leverage: u8) -> Result<ChangeLeverageResponse>
-    where
-        S: Into<String>,
+        where
+            S: Into<String>,
     {
         let mut parameters: BTreeMap<String, String> = BTreeMap::new();
         parameters.insert("symbol".into(), symbol.into());
         parameters.insert("leverage".into(), leverage.to_string());
 
         let request = build_signed_request(parameters, self.recv_window)?;
-        self.client.post_signed_d("/fapi/v1/leverage", request.as_str()).await
+        self.client.post_signed_d((self.router)(Futures::ChangeInitialLeverage).as_str(), request.as_str()).await
     }
 
     pub async fn change_position_mode(&self, dual_side_position: bool) -> Result<()> {
         self.client
             .post_signed_p(
-                "/fapi/v1/positionSide/dual",
+                (self.router)(Futures::PositionSide).as_str(),
                 ChangePositionModeRequest { dual_side_position },
                 self.recv_window,
             )
@@ -246,12 +250,12 @@ impl FuturesAccount {
     }
 
     pub async fn cancel_all_open_orders<S>(&self, symbol: S) -> Result<()>
-    where
-        S: Into<String>,
+        where
+            S: Into<String>,
     {
         self.client
             .delete_signed_p(
-                "/fapi/v1/allOpenOrders",
+                (self.router)(Futures::AllOpenOrders).as_str(),
                 PairQuery { symbol: symbol.into() },
                 self.recv_window,
             )

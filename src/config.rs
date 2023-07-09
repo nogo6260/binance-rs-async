@@ -1,3 +1,5 @@
+use crate::futures::router::{Futures, usdt_m_router};
+
 pub static DATA_REST_ENDPOINT: &str = "https://data.binance.com";
 
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -5,6 +7,7 @@ pub struct Config {
     pub rest_api_endpoint: String,
     pub ws_endpoint: String,
 
+    pub futures_rest_api_router: fn(Futures) -> String,
     pub futures_rest_api_endpoint: String,
     pub futures_ws_endpoint: String,
 
@@ -67,6 +70,27 @@ impl Config {
     /// ```
     pub fn set_ws_endpoint<T: Into<String>>(mut self, ws_endpoint: T) -> Self {
         self.ws_endpoint = ws_endpoint.into();
+        self
+    }
+
+    /// Sets the futures rest path builder Defaults to "binance::futures::router::usdt_m_router".
+    ///
+    /// # Arguments
+    ///
+    /// * `f`: The timeout, in seconds
+    ///
+    /// returns: Config
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use binance::config::Config;
+    /// use binance::futures::router::{Builder, usdt_m_router};
+    /// let config = Config::default();
+    /// config.set_futures_rest_router_builder(usdt_m_router);
+    /// ```
+    pub fn set_futures_rest_router_builder(mut self, router :fn(Futures)-> String) ->Self {
+        self.futures_rest_api_router = router;
         self
     }
 
@@ -150,6 +174,7 @@ impl Config {
         self.timeout = Some(timeout);
         self
     }
+
 }
 
 impl Default for Config {
@@ -164,6 +189,7 @@ impl Default for Config {
             rest_api_endpoint: "https://api.binance.com".into(),
             ws_endpoint: "wss://stream.binance.com:9443".into(),
 
+            futures_rest_api_router: usdt_m_router,
             futures_rest_api_endpoint: "https://fapi.binance.com".into(),
             futures_ws_endpoint: "wss://fstream.binance.com".into(),
 

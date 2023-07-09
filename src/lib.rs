@@ -78,7 +78,7 @@ pub mod util;
 pub mod account;
 pub mod api;
 pub mod config;
-#[cfg(feature = "futures_api")]
+// #[cfg(feature = "futures_api")]
 pub mod futures;
 pub mod general;
 #[cfg(feature = "margin_api")]

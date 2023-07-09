@@ -77,6 +77,7 @@ impl Binance for crate::futures::general::FuturesGeneral {
                 config.futures_rest_api_endpoint.clone(),
                 config.timeout,
             ),
+            router: config.futures_rest_api_router,
         }
     }
 }
@@ -92,6 +93,7 @@ impl Binance for crate::futures::market::FuturesMarket {
                 config.timeout,
             ),
             recv_window: config.recv_window,
+            router: config.futures_rest_api_router,
         }
     }
 }
@@ -107,6 +109,7 @@ impl Binance for crate::futures::account::FuturesAccount {
                 config.timeout,
             ),
             recv_window: config.recv_window,
+            router: config.futures_rest_api_router
         }
     }
 }
