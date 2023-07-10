@@ -1,30 +1,38 @@
 use crate::client::*;
 use crate::errors::*;
+use crate::futures::futures_type::FuturesType;
 use crate::futures::rest_model::*;
 use crate::rest_model::{ServerTime, Success};
 use super::router::*;
 
-pub struct FuturesGeneral {
+pub struct FuturesGeneral<T> {
     pub client: Client,
-    pub router: fn(Futures) -> String,
+    pub router: fn(FuturesRoute) -> String,
+    pub _marker: std::marker::PhantomData<T>,
 }
 
-impl FuturesGeneral {
+impl<T> FuturesGeneral<T>
+    where T: FuturesType,
+{
+
+    fn get_api(&self, f: FuturesRoute)-> String{
+        (self.router)(f)
+    }
 
     // Test connectivity
     pub async fn ping(&self) -> Result<Success> {
-        self.client.get((self.router)(Futures::Ping).as_str(), None).await
+        self.client.get(self.get_api(FuturesRoute::Ping).as_str(), None).await
     }
 
     // Check server time
     pub async fn get_server_time(&self) -> Result<ServerTime> {
-        self.client.get_p((self.router)(Futures::Time).as_str(), None).await
+        self.client.get_p(self.get_api(FuturesRoute::Time).as_str(), None).await
     }
 
     // Obtain exchange information
     // - Current exchange trading rules and symbol information
     pub async fn exchange_info(&self) -> Result<ExchangeInformation> {
-        self.client.get_p((self.router)(Futures::ExchangeInfo).as_str(), None).await
+        self.client.get_p(self.get_api(FuturesRoute::ExchangeInfo).as_str(), None).await
     }
 
     // Get Symbol information

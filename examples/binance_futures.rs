@@ -9,10 +9,10 @@ async fn main() {
     Builder::new().parse_default_env().init();
     #[cfg(feature = "futures_api")]
     general().await;
-    // #[cfg(feature = "futures_api")]
-    // market_data().await;
-    // #[cfg(feature = "futures_api")]
-    // account().await;
+    #[cfg(feature = "futures_api")]
+    market_data().await;
+    #[cfg(feature = "futures_api")]
+    account().await;
     println!("done");
 }
 
@@ -21,8 +21,9 @@ async fn general() {
     use binance::api::*;
     use binance::errors::Error as BinanceLibError;
     use binance::futures::general::*;
+    use binance::futures::futures_type::*;
 
-    let general: FuturesGeneral = Binance::new(None, None);
+    let general: FuturesGeneral<FuturesLinearType> = Binance::new(None, None);
 
     match general.ping().await {
         Ok(answer) => info!("Ping : {:?}", answer),
@@ -59,8 +60,9 @@ async fn market_data() {
     use binance::api::*;
     use binance::futures::market::*;
     use binance::futures::rest_model::*;
+    use binance::futures::futures_type::*;
 
-    let market: FuturesMarket = Binance::new(None, None);
+    let market: FuturesMarket<FuturesLinearType> = Binance::new(None, None);
 
     match market.get_depth("btcusdt").await {
         Ok(answer) => info!("Depth update ID: {:?}", answer.last_update_id),
@@ -121,10 +123,12 @@ async fn market_data() {
 #[cfg(feature = "futures_api")]
 async fn account() {
     use binance::{api::Binance, config::Config, futures::account::FuturesAccount};
+    use binance::futures::futures_type::*;
+
     let api_key = Some("".into());
     let secret_key = Some("".into());
 
-    let account = FuturesAccount::new_with_config(api_key, secret_key, &Config::testnet());
+    let account:FuturesAccount<FuturesLinearType> = FuturesAccount::new_with_config(api_key, secret_key, &Config::testnet());
 
     match account.account_information().await {
         Ok(answer) => info!("Account Info: {:?}", answer),

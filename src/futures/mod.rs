@@ -6,3 +6,4 @@ pub mod websockets;
 pub mod ws_model;
 pub mod userstream;
 pub mod router;
+pub mod futures_type;

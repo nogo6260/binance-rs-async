@@ -1,6 +1,7 @@
 use crate::account::*;
 use crate::client::*;
 use crate::config::Config;
+use crate::futures::futures_type::FuturesType;
 use crate::general::*;
 use crate::market::*;
 use crate::userstream::*;
@@ -68,48 +69,74 @@ impl Binance for UserStream {
 }
 
 #[cfg(feature = "futures_api")]
-impl Binance for crate::futures::general::FuturesGeneral {
+impl<T> Binance for crate::futures::general::FuturesGeneral<T>
+    where T: FuturesType
+{
     fn new_with_config(api_key: Option<String>, secret_key: Option<String>, config: &Config) -> Self {
+        let host = if config.futures_rest_api_endpoint == "" {
+            T::endpoint()
+        } else {
+            config.futures_rest_api_endpoint.clone()
+        };
+
         Self {
             client: Client::new(
                 api_key,
                 secret_key,
-                config.futures_rest_api_endpoint.clone(),
+                host,
                 config.timeout,
             ),
-            router: config.futures_rest_api_router,
+            router: T::router(),
+            _marker: std::marker::PhantomData,
         }
     }
 }
 
 #[cfg(feature = "futures_api")]
-impl Binance for crate::futures::market::FuturesMarket {
+impl<T> Binance for crate::futures::market::FuturesMarket<T>
+    where T: FuturesType
+{
     fn new_with_config(api_key: Option<String>, secret_key: Option<String>, config: &Config) -> Self {
+        let host = if config.futures_rest_api_endpoint == "" {
+            T::endpoint()
+        } else {
+            config.futures_rest_api_endpoint.clone()
+        };
         Self {
             client: Client::new(
                 api_key,
                 secret_key,
-                config.futures_rest_api_endpoint.clone(),
+                host,
                 config.timeout,
             ),
             recv_window: config.recv_window,
-            router: config.futures_rest_api_router,
+            router: T::router(),
+            _marker: std::marker::PhantomData,
         }
     }
 }
 
 #[cfg(feature = "futures_api")]
-impl Binance for crate::futures::account::FuturesAccount {
+impl<T> Binance for crate::futures::account::FuturesAccount<T>
+    where T: FuturesType
+{
     fn new_with_config(api_key: Option<String>, secret_key: Option<String>, config: &Config) -> Self {
+        let host = if config.futures_rest_api_endpoint == "" {
+            T::endpoint()
+        } else {
+            config.futures_rest_api_endpoint.clone()
+        };
+
         Self {
             client: Client::new(
                 api_key,
                 secret_key,
-                config.futures_rest_api_endpoint.clone(),
+                host,
                 config.timeout,
             ),
             recv_window: config.recv_window,
-            router: config.futures_rest_api_router
+            router: T::router(),
+            _marker: std::marker::PhantomData,
         }
     }
 }

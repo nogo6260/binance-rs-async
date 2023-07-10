@@ -3,6 +3,7 @@ use serde_json::Value;
 
 use crate::client::*;
 use crate::errors::*;
+use crate::futures::futures_type::FuturesType;
 use crate::futures::rest_model::*;
 use crate::rest_model::{
     BookTickers, KlineSummaries, KlineSummary, PairAndWindowQuery, PairQuery, SymbolPrice, Tickers,
@@ -15,19 +16,18 @@ use super::router::*;
 //TODO : find out the repartition of kline/candlestick columns in the future kline rows
 //TODO : make limit optional where applicable
 
-pub struct FuturesMarket {
+pub struct FuturesMarket<T> {
     pub client: Client,
     pub recv_window: u64,
-    pub router: fn(Futures) -> String,
+    pub router: fn(FuturesRoute) -> String,
+    pub _marker: std::marker::PhantomData<T>,
 }
 
-impl FuturesMarket {
-    fn api(&self, f:Futures) -> String {
-        let path = (self.router)(f.clone());
-        if path.ne("null") {
-            panic!("not supported {:?} yet!!",f)
-        }
-        return path
+impl<T> FuturesMarket<T>
+    where T: FuturesType,
+{
+    fn get_api(&self, f: FuturesRoute)-> String{
+        (self.router)(f)
     }
 
     // Order book (Default 100; max 1000)
@@ -36,7 +36,7 @@ impl FuturesMarket {
             S: Into<String>,
     {
         self.client
-            .get_d((self.router)(Futures::Depth).as_str(), Some(PairQuery { symbol: symbol.into() }))
+            .get_d(self.get_api(FuturesRoute::Depth).as_str(), Some(PairQuery { symbol: symbol.into() }))
             .await
     }
 
@@ -46,7 +46,7 @@ impl FuturesMarket {
             S: Into<String>,
     {
         self.client
-            .get_d((self.router)(Futures::Trades).as_str(), Some(PairQuery { symbol: symbol.into() }))
+            .get_d(self.get_api(FuturesRoute::Trades).as_str(), Some(PairQuery { symbol: symbol.into() }))
             .await
     }
 
@@ -59,7 +59,7 @@ impl FuturesMarket {
     {
         self.client
             .get_signed_p(
-                (self.router)(Futures::HistoricalTrades).as_str(),
+                self.get_api(FuturesRoute::HistoricalTrades).as_str(),
                 Some(HistoryQuery {
                     start_time: None,
                     end_time: None,
@@ -92,7 +92,7 @@ impl FuturesMarket {
     {
         self.client
             .get_signed_p(
-                (self.router)(Futures::AggTrades).as_str(),
+                self.get_api(FuturesRoute::AggTrades).as_str(),
                 Some(HistoryQuery {
                     start_time: start_time.into(),
                     end_time: end_time.into(),
@@ -123,7 +123,7 @@ impl FuturesMarket {
     {
         self.client
             .get_signed_p(
-                (self.router)(Futures::FundingRate).as_str(),
+                self.get_api(FuturesRoute::FundingRate).as_str(),
                 Some(HistoryQuery {
                     start_time: start_time.into(),
                     end_time: end_time.into(),
@@ -323,7 +323,7 @@ impl FuturesMarket {
             from_id: None,
             period: None,
         };
-        let data: Vec<Vec<Value>> = self.client.get_d((self.router)(Futures::Klines).as_str(), Some(query)).await?;
+        let data: Vec<Vec<Value>> = self.client.get_d(self.get_api(FuturesRoute::Klines).as_str(), Some(query)).await?;
 
         let klines = KlineSummaries::AllKlineSummaries(
             data.iter()
@@ -374,7 +374,7 @@ impl FuturesMarket {
             from_id: None,
             period: None,
         };
-        let klines = self.client.get_d((self.router)(Futures::LvtKlines).as_str(), Some(query)).await?;
+        let klines = self.client.get_d(self.get_api(FuturesRoute::LvtKlines).as_str(), Some(query)).await?;
 
         Ok(klines)
     }
@@ -407,7 +407,7 @@ impl FuturesMarket {
             from_id: None,
             period: None,
         };
-        let klines = self.client.get_d((self.router)(Futures::MarkPriceKlines).as_str(), Some(query)).await?;
+        let klines = self.client.get_d(self.get_api(FuturesRoute::MarkPriceKlines).as_str(), Some(query)).await?;
 
         Ok(klines)
     }
@@ -441,7 +441,7 @@ impl FuturesMarket {
             period: None,
         };
 
-        let klines = self.client.get_d((self.router)(Futures::IndexPriceKlines).as_str(), Some(query)).await?;
+        let klines = self.client.get_d(self.get_api(FuturesRoute::IndexPriceKlines).as_str(), Some(query)).await?;
 
         Ok(klines)
     }
@@ -474,7 +474,7 @@ impl FuturesMarket {
             from_id: None,
             period: None,
         };
-        let klines = self.client.get_d((self.router)(Futures::ContinuousKlines).as_str(), Some(query)).await?;
+        let klines = self.client.get_d(self.get_api(FuturesRoute::ContinuousKlines).as_str(), Some(query)).await?;
 
         Ok(klines)
     }
@@ -489,7 +489,7 @@ impl FuturesMarket {
             recv_window: self.recv_window,
         };
         self.client
-            .get_signed_p((self.router)(Futures::LeverageBracket).as_str(), Some(p), self.recv_window)
+            .get_signed_p(self.get_api(FuturesRoute::LeverageBracket).as_str(), Some(p), self.recv_window)
             .await
     }
 
@@ -500,7 +500,7 @@ impl FuturesMarket {
             S: Into<String>,
     {
         let p = symbol.map(|s| PairQuery { symbol: s.into() });
-        self.client.get_d((self.router)(Futures::IndexInfo).as_str(), p).await
+        self.client.get_d(self.get_api(FuturesRoute::IndexInfo).as_str(), p).await
     }
 
     /// 24hr ticker price change statistics
@@ -509,13 +509,13 @@ impl FuturesMarket {
             S: Into<String>,
     {
         self.client
-            .get_d((self.router)(Futures::Ticker24hr).as_str(), Some(PairQuery { symbol: symbol.into() }))
+            .get_d(self.get_api(FuturesRoute::Ticker24hr).as_str(), Some(PairQuery { symbol: symbol.into() }))
             .await
     }
 
     /// 24hr ticker price change statistics for all symbols
     pub async fn get_all_24h_price_stats(&self) -> Result<Vec<PriceStats>> {
-        self.client.get_p((self.router)(Futures::Ticker24hr).as_str(), None).await
+        self.client.get_p(self.get_api(FuturesRoute::Ticker24hr).as_str(), None).await
     }
 
     /// Latest price for ONE symbol.
@@ -524,14 +524,14 @@ impl FuturesMarket {
             S: Into<String>,
     {
         self.client
-            .get_d((self.router)(Futures::TickerPrice).as_str(), Some(PairQuery { symbol: symbol.into() }))
+            .get_d(self.get_api(FuturesRoute::TickerPrice).as_str(), Some(PairQuery { symbol: symbol.into() }))
             .await
     }
 
     /// Symbols order book ticker
     /// -> Best price/qty on the order book for ALL symbols.
     pub async fn get_all_book_tickers(&self) -> Result<BookTickers> {
-        self.client.get_p((self.router)(Futures::BookTicker).as_str(), None).await
+        self.client.get_p(self.get_api(FuturesRoute::BookTicker).as_str(), None).await
     }
 
     // -> Best price/qty on the order book for ONE symbol
@@ -540,7 +540,7 @@ impl FuturesMarket {
             S: Into<String>,
     {
         self.client
-            .get_d((self.router)(Futures::BookTicker).as_str(), Some(PairQuery { symbol: symbol.into() }))
+            .get_d(self.get_api(FuturesRoute::BookTicker).as_str(), Some(PairQuery { symbol: symbol.into() }))
             .await
     }
 
@@ -548,16 +548,16 @@ impl FuturesMarket {
         if let Some(symbol) = symbol {
             Ok(vec![
                 self.client
-                    .get_d::<MarkPrice, PairQuery>((self.router)(Futures::PremiumIndex).as_str(), Some(PairQuery { symbol }))
+                    .get_d::<MarkPrice, PairQuery>(self.get_api(FuturesRoute::PremiumIndex).as_str(), Some(PairQuery { symbol }))
                     .await?,
             ])
         } else {
-            self.client.get_p((self.router)(Futures::PremiumIndex).as_str(), None).await
+            self.client.get_p(self.get_api(FuturesRoute::PremiumIndex).as_str(), None).await
         }
     }
 
     pub async fn get_all_liquidation_orders(&self) -> Result<LiquidationOrders> {
-        self.client.get_p((self.router)(Futures::AllForceOrders).as_str(), None).await
+        self.client.get_p(self.get_api(FuturesRoute::AllForceOrders).as_str(), None).await
     }
 
     pub async fn open_interest<S>(&self, symbol: S) -> Result<OpenInterest>
@@ -565,7 +565,7 @@ impl FuturesMarket {
             S: Into<String>,
     {
         self.client
-            .get_d((self.router)(Futures::OpenInterest).as_str(), Some(PairQuery { symbol: symbol.into() }))
+            .get_d(self.get_api(FuturesRoute::OpenInterest).as_str(), Some(PairQuery { symbol: symbol.into() }))
             .await
     }
 }
