@@ -92,3 +92,6 @@ pub mod userstream;
 pub mod wallet;
 pub mod websockets;
 pub mod ws_model;
+pub mod spot;
+
+pub use spot::api::*;

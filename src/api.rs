@@ -4,6 +4,8 @@ use crate::config::Config;
 use crate::futures::futures_type::FuturesType;
 use crate::general::*;
 use crate::market::*;
+use crate::Spot;
+use crate::spot::*;
 use crate::userstream::*;
 
 pub trait Binance: Sized {
@@ -23,6 +25,21 @@ pub trait Binance: Sized {
     fn new_with_config(api_key: Option<String>, secret_key: Option<String>, config: &Config) -> Self;
 }
 
+
+impl Binance for Spot {
+    fn new_with_config(api_key: Option<String>, secret_key: Option<String>, config: &Config) -> Self {
+        let client = Client::new(api_key, secret_key, config.rest_api_endpoint.clone(), config.timeout);
+        Self {
+            account: account::Account { client: client.clone(), recv_window: config.recv_window },
+            margin: margin::Margin { client: client.clone(), recv_window: config.recv_window },
+            market: market::Market { client: client.clone(), recv_window: config.recv_window },
+            trade: trade::Trade { client: client.clone(), recv_window: config.recv_window },
+        }
+    }
+}
+
+
+// old
 impl Binance for General {
     fn new_with_config(api_key: Option<String>, secret_key: Option<String>, config: &Config) -> General {
         General {
