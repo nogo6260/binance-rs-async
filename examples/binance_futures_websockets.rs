@@ -1,5 +1,4 @@
 #[cfg(feature = "futures_api")]
-
 #[macro_use]
 extern crate tokio;
 

@@ -1,22 +1,23 @@
 #[cfg(feature = "futures_api")]
 #[macro_use]
 extern crate tracing;
-
-use env_logger::Builder;
+use tracing_attributes::instrument;
 
 #[tokio::main]
 async fn main() {
-    Builder::new().parse_default_env().init();
-    #[cfg(feature = "futures_api")]
+    tracing_subscriber::fmt()
+        .with_max_level(tracing::Level::INFO)
+        .init();
+
+    info!("start general test");
     general().await;
-    #[cfg(feature = "futures_api")]
+    info!("start market test");
     market_data().await;
-    #[cfg(feature = "futures_api")]
+    info!("start account test");
     account().await;
-    println!("done");
 }
 
-#[cfg(feature = "futures_api")]
+#[instrument]
 async fn general() {
     use binance::api::*;
     use binance::errors::Error as BinanceLibError;
@@ -55,7 +56,7 @@ async fn general() {
     }
 }
 
-#[cfg(feature = "futures_api")]
+#[instrument]
 async fn market_data() {
     use binance::api::*;
     use binance::futures::market::*;
@@ -120,7 +121,7 @@ async fn market_data() {
     }
 }
 
-#[cfg(feature = "futures_api")]
+#[instrument]
 async fn account() {
     use binance::{api::Binance, config::Config, futures::account::FuturesAccount};
     use binance::futures::futures_type::*;

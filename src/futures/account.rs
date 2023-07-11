@@ -17,6 +17,7 @@ use super::rest_model::{
     PositionSide, Transaction, WorkingType,
 };
 
+#[derive(Clone)]
 pub struct FuturesAccount<T: FuturesType> {
     pub client: Client,
     pub recv_window: u64,

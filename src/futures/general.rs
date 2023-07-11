@@ -5,6 +5,7 @@ use crate::futures::rest_model::*;
 use crate::rest_model::{ServerTime, Success};
 use super::router::*;
 
+#[derive(Clone)]
 pub struct FuturesGeneral<T: FuturesType> {
     pub client: Client,
     pub router: fn(FuturesRoute) -> String,
