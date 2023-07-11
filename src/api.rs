@@ -69,6 +69,26 @@ impl Binance for UserStream {
 }
 
 #[cfg(feature = "futures_api")]
+impl<T> Binance for crate::futures::userstream::UserStream<T>
+    where T: FuturesType
+{
+    fn new_with_config(api_key: Option<String>, secret_key: Option<String>, config: &Config) -> Self {
+        let host = if config.futures_rest_api_endpoint == "" {
+            T::endpoint()
+        } else {
+            config.futures_rest_api_endpoint.clone()
+        };
+
+        Self {
+            client: Client::new(api_key, secret_key, host, config.timeout),
+            recv_window: config.recv_window,
+            router: T::router(),
+            _marker: std::marker::PhantomData,
+        }
+    }
+}
+
+#[cfg(feature = "futures_api")]
 impl<T> Binance for crate::futures::general::FuturesGeneral<T>
     where T: FuturesType
 {

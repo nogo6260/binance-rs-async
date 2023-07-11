@@ -11,6 +11,7 @@ use futures::stream::StreamExt;
 use serde_json::from_str;
 use tokio::sync::mpsc::UnboundedSender;
 use tokio_tungstenite::tungstenite::Message;
+use binance::futures::futures_type::FuturesLinearType;
 
 
 use binance::futures::websockets::*;
@@ -55,7 +56,7 @@ async fn market_websocket(logger_tx: UnboundedSender<FuturesWebsocketEvent>) {
     let keep_running = AtomicBool::new(true); // Used to control the event loop
     let agg_trades: String = agg_trade_stream("ethusdt");
     let ticker: String = trade_stream("btcusdt");
-    let mut web_socket: FuturesWebSockets = FuturesWebSockets::new(|event: FuturesWebsocketEvent| {
+    let mut web_socket: FuturesWebSockets<FuturesLinearType> = FuturesWebSockets::new(|event: FuturesWebsocketEvent| {
         logger_tx.send(event.clone()).unwrap();
         match event {
             FuturesWebsocketEvent::AggTrade(trade) => {

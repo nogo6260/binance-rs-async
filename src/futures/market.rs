@@ -16,7 +16,7 @@ use super::router::*;
 //TODO : find out the repartition of kline/candlestick columns in the future kline rows
 //TODO : make limit optional where applicable
 
-pub struct FuturesMarket<T> {
+pub struct FuturesMarket<T: FuturesType> {
     pub client: Client,
     pub recv_window: u64,
     pub router: fn(FuturesRoute) -> String,

@@ -17,7 +17,7 @@ use super::rest_model::{
     PositionSide, Transaction, WorkingType,
 };
 
-pub struct FuturesAccount<T> {
+pub struct FuturesAccount<T: FuturesType> {
     pub client: Client,
     pub recv_window: u64,
     pub router: fn(FuturesRoute) -> String,
@@ -78,8 +78,7 @@ struct ChangePositionModeRequest {
 impl<T> FuturesAccount<T>
     where T: FuturesType,
 {
-
-    fn get_api(&self, f: FuturesRoute)-> String{
+    fn get_api(&self, f: FuturesRoute) -> String {
         (self.router)(f)
     }
 

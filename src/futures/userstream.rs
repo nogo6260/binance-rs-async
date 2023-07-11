@@ -1,16 +1,24 @@
 use crate::client::*;
 use crate::errors::*;
+use crate::futures::futures_type::FuturesType;
+use crate::futures::router::FuturesRoute;
 use crate::rest_model::*;
 
-static USER_DATA_STREAM: &str = "/fapi/v1/listenKey";
-
 #[derive(Clone)]
-pub struct UserStream {
+pub struct UserStream<T> {
     pub client: Client,
     pub recv_window: u64,
+    pub router: fn(FuturesRoute)-> String,
+    pub _marker: std::marker::PhantomData<T>,
 }
 
-impl UserStream {
+impl<T> UserStream <T>
+    where T: FuturesType,
+{
+    fn get_api(&self, f: FuturesRoute)-> String{
+        (self.router)(f)
+    }
+
     /// Get a listen key for the stream
     /// # Examples
     /// ```rust,no_run
@@ -20,7 +28,7 @@ impl UserStream {
     /// assert!(start.is_ok(), "{:?}", start);
     /// assert!(start.unwrap().listen_key.len() > 0)
     /// ```
-    async fn start(&self) -> Result<UserDataStream> { self.client.post(USER_DATA_STREAM, None).await }
+    async fn start(&self) -> Result<UserDataStream> { self.client.post(self.get_api(FuturesRoute::UserDataStream).as_str(), None).await }
 
     /// Keep the connection alive, as the listen key becomes invalid after 60mn
     /// # Examples
@@ -33,7 +41,7 @@ impl UserStream {
     /// assert!(keep_alive.is_ok())
     /// ```
     async fn keep_alive(&self, listen_key: &str) -> Result<Success> {
-        self.client.put(USER_DATA_STREAM, listen_key, None).await
+        self.client.put(self.get_api(FuturesRoute::UserDataStream).as_str(), listen_key, None).await
     }
 
     /// Invalidate the listen key
@@ -47,6 +55,6 @@ impl UserStream {
     /// assert!(close.is_ok())
     /// ```
     async fn close(&self, listen_key: &str) -> Result<Success> {
-        self.client.delete(USER_DATA_STREAM, listen_key, None).await
+        self.client.delete(self.get_api(FuturesRoute::UserDataStream).as_str(), listen_key, None).await
     }
 }

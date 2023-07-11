@@ -14,6 +14,7 @@ use url::Url;
 
 use crate::config::Config;
 use crate::errors::*;
+use crate::futures::futures_type::FuturesType;
 use crate::ws_model::*;
 
 pub fn agg_trade_stream(symbol: &str) -> String { format!("{symbol}@aggTrade") }
@@ -77,28 +78,38 @@ pub enum FuturesWebsocketEvent {
     ListOrderUpdate(Box<OrderListUpdate>),
 }
 
-pub struct FuturesWebSockets<'a> {
+pub struct FuturesWebSockets<'a, T: FuturesType> {
     pub socket: Option<(WebSocketStream<MaybeTlsStream<TcpStream>>, Response)>,
     handler: Box<dyn FnMut(FuturesWebsocketEvent) -> Result<()> + 'a + Send>,
     conf: Config,
+    pub _marker: std::marker::PhantomData<T>,
 }
 
-impl<'a> FuturesWebSockets<'a> {
-    pub fn new<Callback>(handler: Callback) -> FuturesWebSockets<'a>
+impl<'a, T> FuturesWebSockets<'a, T>
+    where T: FuturesType
+{
+    pub fn new<Callback>(handler: Callback) -> Self
         where
             Callback: FnMut(FuturesWebsocketEvent) -> Result<()> + 'a + Send,
     {
         Self::new_with_options(handler, Config::default())
     }
 
-    pub fn new_with_options<Callback>(handler: Callback, conf: Config) -> FuturesWebSockets<'a>
+    pub fn new_with_options<Callback>(handler: Callback, mut conf: Config) -> Self
         where
             Callback: FnMut(FuturesWebsocketEvent) -> Result<()> + 'a + Send,
     {
-        FuturesWebSockets {
+        conf.futures_ws_endpoint = if conf.futures_ws_endpoint == "" {
+            T::ws_endpoint()
+        } else {
+            conf.futures_ws_endpoint.clone()
+        };
+
+        Self {
             socket: None,
             handler: Box::new(handler),
             conf,
+            _marker: std::marker::PhantomData,
         }
     }
 

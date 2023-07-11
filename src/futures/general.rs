@@ -5,7 +5,7 @@ use crate::futures::rest_model::*;
 use crate::rest_model::{ServerTime, Success};
 use super::router::*;
 
-pub struct FuturesGeneral<T> {
+pub struct FuturesGeneral<T: FuturesType> {
     pub client: Client,
     pub router: fn(FuturesRoute) -> String,
     pub _marker: std::marker::PhantomData<T>,

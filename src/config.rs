@@ -168,8 +168,10 @@ impl Default for Config {
             ws_endpoint: "wss://stream.binance.com:9443".into(),
 
             //futures_rest_api_endpoint: "https://fapi.binance.com".into(),
+            //futures_ws_endpoint: "wss://fstream.binance.com".into(),
+
             futures_rest_api_endpoint: "".into(),
-            futures_ws_endpoint: "wss://fstream.binance.com".into(),
+            futures_ws_endpoint: "".into(),
 
             recv_window: 5000,
             binance_us_api: false,
