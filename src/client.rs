@@ -21,6 +21,8 @@ pub struct Client {
     host: String,
 }
 
+
+
 impl Client {
     /// Returns a client based on the specified host and credentials
     /// Credentials do not need to be specified when using public endpoints

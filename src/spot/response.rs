@@ -1,4 +1,5 @@
 use rust_decimal::Decimal;
+
 use crate::rest_model::*;
 use crate::util::*;
 
@@ -33,10 +34,5 @@ pub struct Order {
     pub orig_quote_order_qty: Decimal,
 }
 
-#[derive(Debug, Serialize, Deserialize, Clone)]
-#[serde(rename_all = "camelCase")]
-pub struct OrderBook {
-    pub last_update_id: u64,
-    pub bids: Vec<Bids>,
-    pub asks: Vec<Asks>,
-}
+
+

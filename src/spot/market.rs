@@ -1,7 +1,8 @@
+use super::market_service::depth::DepthBuilder;
+use super::market_service::klines::KlinesBuilder;
+use super::market_service::tickers::{Ticker24hBuilder,Ticker24hMultiBuilder, LastPriceBuilder, LastPriceMultiBuilder, BookTickerBuilder,BookTickerMultiBuilder};
+use super::market_service::trades::{AggTradesBuilder, HistoricalTradesBuilder, TradesBuilder};
 use crate::client::Client;
-use crate::errors::*;
-use crate::spot::response::OrderBook;
-use crate::util::*;
 
 pub struct Market {
     pub(crate) client: Client,
@@ -9,32 +10,200 @@ pub struct Market {
 }
 
 impl Market {
-    fn symbol_request<S>(&self, symbol: S) -> String
-        where
-            S: AsRef<str>,
-    {
-        build_request([("symbol", symbol)])
-    }
-
     /// 深度信息
-    /// https://binance-docs.github.io/apidocs/spot/cn/#38a975b802
+    /// `limit` 可选值： 5, 10, 20, 50, 100, 500, 1000, 5000
     /// # Example
     /// ``` rust
     /// use binance::api::Binance;
     /// use binance::Spot;
     /// let spot:Spot = Binance::new(None,None);
-    /// let depth = tokio_test::block_on(spot.market.get_depth("BTCUSDT"));
+    /// let bulider = spot.market.get_depth("BTCUSDT").limit(50);
+    /// let data = tokio_test::block_on(bulider.send());
+    /// assert!(data.is_ok(), "{:?}", data);
+    /// ```
+    /// https://binance-docs.github.io/apidocs/spot/cn/#38a975b802
+    pub fn get_depth<S>(&self, symbol: S) -> DepthBuilder
+    where
+        S: AsRef<str>,
+    {
+        DepthBuilder::new(&self.client, symbol.as_ref().to_string())
+    }
+
+    /// 近期成交列表
+    /// `limit` 可选值： 0-1000
+    /// # Example
+    /// ``` rust
+    /// use binance::api::Binance;
+    /// use binance::Spot;
+    /// let spot:Spot = Binance::new(None,None);
+    /// let bulider = spot.market.get_trades("BTCUSDT").limit(50);
+    /// let data = tokio_test::block_on(bulider.send());
+    /// assert!(data.is_ok(), "{:?}", data);
+    /// ```
+    /// https://binance-docs.github.io/apidocs/spot/cn/#2c5e424c25
+    pub fn get_trades<S>(&self, symbol: S) -> TradesBuilder
+    where
+        S: AsRef<str>,
+    {
+        TradesBuilder::new(&self.client, symbol.as_ref().to_string())
+    }
+
+    /// 查询历史成交
+    /// # Example
+    /// ``` rust
+    /// use binance::api::Binance;
+    /// use binance::Spot;
+    /// let spot:Spot = Binance::new(None,None);
+    /// let bulider = spot.market.get_historical_trades("BTCUSDT").limit(50);
+    /// let data = tokio_test::block_on(bulider.send());
+    /// assert!(data.is_ok(), "{:?}", data);
+    /// ```
+    /// https://binance-docs.github.io/apidocs/spot/cn/#5221bade13
+    pub fn get_historical_trades<S>(&self, symbol: S) -> HistoricalTradesBuilder
+    where
+        S: AsRef<str>,
+    {
+        HistoricalTradesBuilder::new(&self.client, symbol.as_ref().to_string())
+    }
+
+    /// 近期成交(归集)
+    /// # Example
+    /// ``` rust
+    /// use binance::api::Binance;
+    /// use binance::Spot;
+    /// let spot:Spot = Binance::new(None,None);
+    /// let bulider = spot.market.get_agg_trades("BTCUSDT").limit(50);
+    /// let data = tokio_test::block_on(bulider.send());
+    /// assert!(data.is_ok(), "{:?}", data);
+    /// ```
+    /// https://binance-docs.github.io/apidocs/spot/cn/#c59e471e81
+    pub fn get_agg_trades<S>(&self, symbol: S) -> AggTradesBuilder
+    where
+        S: AsRef<str>,
+    {
+        AggTradesBuilder::new(&self.client, symbol.as_ref().to_string())
+    }
+
+    /// K线数据
+    /// # Example
+    /// ``` rust
+    /// use binance::api::Binance;
+    /// use binance::Spot;
+    /// let spot:Spot = Binance::new(None,None);
+    /// let bulider = spot.market.get_klines("BTCUSDT").limit(50);
+    /// let depth = tokio_test::block_on(bulider.send());
     /// assert!(depth.is_ok(), "{:?}", depth);
     /// ```
-    pub async fn get_depth<S>(&self, symbol: S) -> Result<OrderBook>
-        where
-            S: AsRef<str>,
+    /// https://binance-docs.github.io/apidocs/spot/cn/#k
+    pub fn get_klines<S1, S2>(&self, symbol: S1, interval: S2) -> KlinesBuilder
+    where
+        S1: AsRef<str>,
+        S2: AsRef<str>,
     {
-        let request = self.symbol_request(symbol);
-        self.client.get("/api/v3/depth", Some(&request)).await
+        KlinesBuilder::new(&self.client, symbol.as_ref().to_string(), interval.as_ref().to_string())
     }
-}
 
+    /// 24hr 价格变动情况
+    /// # Example
+    /// ``` rust
+    /// use binance::api::Binance;
+    /// use binance::Spot;
+    /// let spot:Spot = Binance::new(None,None);
+    /// let bulider = spot.market.get_ticker_24h("BTCUSDT").limit(50);
+    /// let depth = tokio_test::block_on(bulider.send());
+    /// assert!(depth.is_ok(), "{:?}", depth);
+    /// ```
+    /// https://binance-docs.github.io/apidocs/spot/cn/#24hr
+    pub fn get_ticker_24h<S>(&self, symbol: S) -> Ticker24hBuilder
+    where
+        S: AsRef<str>,
+    {
+        Ticker24hBuilder::new(&self.client, symbol.as_ref().to_string())
+    }
+
+    /// 24hr 价格变动情况
+    /// # Example
+    /// ``` rust
+    /// use binance::api::Binance;
+    /// use binance::Spot;
+    /// let spot:Spot = Binance::new(None,None);
+    /// let bulider = spot.market.get_ticker_24h_multi().symbols(vec!["BTCUSDT","ETHUSDT"]);
+    /// let depth = tokio_test::block_on(bulider.send());
+    /// assert!(depth.is_ok(), "{:?}", depth);
+    /// ```
+    /// https://binance-docs.github.io/apidocs/spot/cn/#24hr
+    pub fn get_ticker_24h_multi(&self) -> Ticker24hMultiBuilder {
+        Ticker24hMultiBuilder::new(&self.client)
+    }
+
+    /// 最新价格
+    /// # Example
+    /// ``` rust
+    /// use binance::api::Binance;
+    /// use binance::Spot;
+    /// let spot:Spot = Binance::new(None,None);
+    /// let bulider = spot.market.get_last_price("BTCUSDT");
+    /// let depth = tokio_test::block_on(bulider.send());
+    /// assert!(depth.is_ok(), "{:?}", depth);
+    /// ```
+    /// https://binance-docs.github.io/apidocs/spot/cn/#8ff46b58de
+    pub fn get_last_price<S>(&self, symbol: S) -> LastPriceBuilder
+    where
+        S: AsRef<str>,
+    {
+        LastPriceBuilder::new(&self.client, symbol.as_ref().to_string())
+    }
+
+    /// 最新价格
+    /// # Example
+    /// ``` rust
+    /// use binance::api::Binance;
+    /// use binance::Spot;
+    /// let spot:Spot = Binance::new(None,None);
+    /// let bulider = spot.market.get_last_price_multi().symbols(vec!["BTCUSDT","ETHUSDT"]);
+    /// let depth = tokio_test::block_on(bulider.send());
+    /// assert!(depth.is_ok(), "{:?}", depth);
+    /// ```
+    /// https://binance-docs.github.io/apidocs/spot/cn/#8ff46b58de
+    pub fn get_last_price_multi(&self) -> LastPriceMultiBuilder {
+        LastPriceMultiBuilder::new(&self.client)
+    }
+
+
+    /// 最新价格
+    /// # Example
+    /// ``` rust
+    /// use binance::api::Binance;
+    /// use binance::Spot;
+    /// let spot:Spot = Binance::new(None,None);
+    /// let bulider = spot.market.get_book_ticker("BTCUSDT");
+    /// let depth = tokio_test::block_on(bulider.send());
+    /// assert!(depth.is_ok(), "{:?}", depth);
+    /// ```
+    /// https://binance-docs.github.io/apidocs/spot/cn/#8ff46b58de
+    pub fn get_book_ticker<S>(&self, symbol: S) -> BookTickerBuilder
+    where
+        S: AsRef<str>,
+    {
+        BookTickerBuilder::new(&self.client, symbol.as_ref().to_string())
+    }
+
+    /// 最新价格
+    /// # Example
+    /// ``` rust
+    /// use binance::api::Binance;
+    /// use binance::Spot;
+    /// let spot:Spot = Binance::new(None,None);
+    /// let bulider = spot.market.get_last_price_multi().symbols(vec!["BTCUSDT","ETHUSDT"]);
+    /// let depth = tokio_test::block_on(bulider.send());
+    /// assert!(depth.is_ok(), "{:?}", depth);
+    /// ```
+    /// https://binance-docs.github.io/apidocs/spot/cn/#8ff46b58de
+    pub fn get_book_ticker_multi(&self) -> BookTickerMultiBuilder {
+        BookTickerMultiBuilder::new(&self.client)
+    }
+
+}
 
 #[cfg(test)]
 mod tests {
@@ -45,7 +214,49 @@ mod tests {
     #[test]
     fn test_get_depth() {
         let spot: Spot = Binance::new_with_config(None, None, &Config::testnet());
-        let depth = tokio_test::block_on(spot.market.get_depth("BTCUSDT"));
-        assert!(depth.is_ok(), "{:?}", depth);
+        let builder = spot.market.get_depth("ETHUSDT").limit(5).send();
+        let resp = tokio_test::block_on(builder);
+        println!("{:?}", resp.unwrap());
+
+        let builder = spot.market.get_trades("ETHUSDT").limit(5).send();
+        let resp = tokio_test::block_on(builder);
+        println!("{:?}", resp.unwrap());
+
+        let builder = spot.market.get_historical_trades("ETHUSDT").limit(5).send();
+        let resp = tokio_test::block_on(builder);
+        println!("{:?}", resp.unwrap());
+
+        let builder = spot.market.get_agg_trades("ETHUSDT").limit(5).send();
+        let resp = tokio_test::block_on(builder);
+        println!("{:?}", resp.unwrap());
+
+        let builder = spot.market.get_klines("ETHUSDT","1m").limit(5).send();
+        let resp = tokio_test::block_on(builder);
+        println!("{:?}", resp.unwrap());
+
+        let builder = spot.market.get_ticker_24h("ETHUSDT").send();
+        let resp = tokio_test::block_on(builder);
+        println!("{:?}", resp.unwrap());
+
+        let builder = spot.market.get_ticker_24h_multi().symbols(vec!["ETHUSDT".into(),"BTCUSDT".into()]).send();
+        let resp = tokio_test::block_on(builder);
+        println!("{:?}", resp.unwrap());
+
+        let builder = spot.market.get_last_price("ETHUSDT").send();
+        let resp = tokio_test::block_on(builder);
+        println!("{:?}", resp.unwrap());
+
+        let builder = spot.market.get_last_price_multi().symbols(vec!["ETHUSDT".into(),"BTCUSDT".into()]).send();
+        let resp = tokio_test::block_on(builder);
+        println!("{:?}", resp.unwrap());
+
+        let builder = spot.market.get_book_ticker("ETHUSDT").send();
+        let resp = tokio_test::block_on(builder);
+        println!("{:?}", resp.unwrap());
+
+        let builder = spot.market.get_book_ticker_multi().symbols(vec!["ETHUSDT".into(),"BTCUSDT".into()]).send();
+        let resp = tokio_test::block_on(builder);
+        println!("{:?}", resp.unwrap());
+        //assert!(depth.is_ok(), "{:?}", depth);
     }
 }
