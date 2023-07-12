@@ -31,7 +31,7 @@ impl<'a> Ticker24hBuilder<'a> {
 /// https://binance-docs.github.io/apidocs/spot/cn/#24hr
 pub struct Ticker24hMultiBuilder<'a> {
     client: &'a Client,
-    symbols: Option<Vec<String>>,
+    symbols: Option<Vec<&'a str>>,
 }
 
 impl<'a> Ticker24hMultiBuilder<'a> {
@@ -39,7 +39,7 @@ impl<'a> Ticker24hMultiBuilder<'a> {
         Self { client, symbols: None }
     }
 
-    pub fn symbols(mut self, symbols: Vec<String>) -> Self {
+    pub fn symbols(mut self, symbols: Vec<&'a str>) -> Self {
         self.symbols = Some(symbols);
         self
     }
@@ -88,7 +88,7 @@ impl<'a> LastPriceBuilder<'a> {
 /// https://binance-docs.github.io/apidocs/spot/cn/#8ff46b58de
 pub struct LastPriceMultiBuilder<'a> {
     client: &'a Client,
-    symbols: Option<Vec<String>>,
+    symbols: Option<Vec<&'a str>>,
 }
 
 impl<'a> LastPriceMultiBuilder<'a> {
@@ -96,7 +96,7 @@ impl<'a> LastPriceMultiBuilder<'a> {
         Self { client, symbols: None }
     }
 
-    pub fn symbols(mut self, symbols: Vec<String>) -> Self {
+    pub fn symbols(mut self, symbols: Vec<&'a str>) -> Self {
         self.symbols = Some(symbols);
         self
     }
@@ -145,7 +145,7 @@ impl<'a> BookTickerBuilder<'a> {
 /// https://binance-docs.github.io/apidocs/spot/cn/#5393cd07b4
 pub struct BookTickerMultiBuilder<'a> {
     client: &'a Client,
-    symbols: Option<Vec<String>>,
+    symbols: Option<Vec<&'a str>>,
 }
 
 impl<'a> BookTickerMultiBuilder<'a> {
@@ -153,7 +153,7 @@ impl<'a> BookTickerMultiBuilder<'a> {
         Self { client, symbols: None }
     }
 
-    pub fn symbols(mut self, symbols: Vec<String>) -> Self {
+    pub fn symbols(mut self, symbols: Vec<&'a str>) -> Self {
         self.symbols = Some(symbols);
         self
     }

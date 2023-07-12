@@ -1,8 +1,9 @@
+use crate::client::Client;
+
 use super::market_service::depth::DepthBuilder;
 use super::market_service::klines::KlinesBuilder;
-use super::market_service::tickers::{Ticker24hBuilder,Ticker24hMultiBuilder, LastPriceBuilder, LastPriceMultiBuilder, BookTickerBuilder,BookTickerMultiBuilder};
+use super::market_service::tickers::{BookTickerBuilder, BookTickerMultiBuilder, LastPriceBuilder, LastPriceMultiBuilder, Ticker24hBuilder, Ticker24hMultiBuilder};
 use super::market_service::trades::{AggTradesBuilder, HistoricalTradesBuilder, TradesBuilder};
-use crate::client::Client;
 
 pub struct Market {
     pub(crate) client: Client,
@@ -17,14 +18,14 @@ impl Market {
     /// use binance::api::Binance;
     /// use binance::Spot;
     /// let spot:Spot = Binance::new(None,None);
-    /// let bulider = spot.market.get_depth("BTCUSDT").limit(50);
-    /// let data = tokio_test::block_on(bulider.send());
+    /// let builder = spot.market.get_depth("BTCUSDT").limit(50);
+    /// let data = tokio_test::block_on(builder.send());
     /// assert!(data.is_ok(), "{:?}", data);
     /// ```
     /// https://binance-docs.github.io/apidocs/spot/cn/#38a975b802
     pub fn get_depth<S>(&self, symbol: S) -> DepthBuilder
-    where
-        S: AsRef<str>,
+        where
+            S: AsRef<str>,
     {
         DepthBuilder::new(&self.client, symbol.as_ref().to_string())
     }
@@ -36,14 +37,14 @@ impl Market {
     /// use binance::api::Binance;
     /// use binance::Spot;
     /// let spot:Spot = Binance::new(None,None);
-    /// let bulider = spot.market.get_trades("BTCUSDT").limit(50);
-    /// let data = tokio_test::block_on(bulider.send());
+    /// let builder = spot.market.get_trades("BTCUSDT").limit(50);
+    /// let data = tokio_test::block_on(builder.send());
     /// assert!(data.is_ok(), "{:?}", data);
     /// ```
     /// https://binance-docs.github.io/apidocs/spot/cn/#2c5e424c25
     pub fn get_trades<S>(&self, symbol: S) -> TradesBuilder
-    where
-        S: AsRef<str>,
+        where
+            S: AsRef<str>,
     {
         TradesBuilder::new(&self.client, symbol.as_ref().to_string())
     }
@@ -54,14 +55,14 @@ impl Market {
     /// use binance::api::Binance;
     /// use binance::Spot;
     /// let spot:Spot = Binance::new(None,None);
-    /// let bulider = spot.market.get_historical_trades("BTCUSDT").limit(50);
-    /// let data = tokio_test::block_on(bulider.send());
+    /// let builder = spot.market.get_historical_trades("BTCUSDT").limit(50);
+    /// let data = tokio_test::block_on(builder.send());
     /// assert!(data.is_ok(), "{:?}", data);
     /// ```
     /// https://binance-docs.github.io/apidocs/spot/cn/#5221bade13
     pub fn get_historical_trades<S>(&self, symbol: S) -> HistoricalTradesBuilder
-    where
-        S: AsRef<str>,
+        where
+            S: AsRef<str>,
     {
         HistoricalTradesBuilder::new(&self.client, symbol.as_ref().to_string())
     }
@@ -72,14 +73,14 @@ impl Market {
     /// use binance::api::Binance;
     /// use binance::Spot;
     /// let spot:Spot = Binance::new(None,None);
-    /// let bulider = spot.market.get_agg_trades("BTCUSDT").limit(50);
-    /// let data = tokio_test::block_on(bulider.send());
+    /// let builder = spot.market.get_agg_trades("BTCUSDT").limit(50);
+    /// let data = tokio_test::block_on(builder.send());
     /// assert!(data.is_ok(), "{:?}", data);
     /// ```
     /// https://binance-docs.github.io/apidocs/spot/cn/#c59e471e81
     pub fn get_agg_trades<S>(&self, symbol: S) -> AggTradesBuilder
-    where
-        S: AsRef<str>,
+        where
+            S: AsRef<str>,
     {
         AggTradesBuilder::new(&self.client, symbol.as_ref().to_string())
     }
@@ -90,15 +91,15 @@ impl Market {
     /// use binance::api::Binance;
     /// use binance::Spot;
     /// let spot:Spot = Binance::new(None,None);
-    /// let bulider = spot.market.get_klines("BTCUSDT").limit(50);
-    /// let depth = tokio_test::block_on(bulider.send());
+    /// let builder = spot.market.get_klines("BTCUSDT","1m").limit(50);
+    /// let depth = tokio_test::block_on(builder.send());
     /// assert!(depth.is_ok(), "{:?}", depth);
     /// ```
     /// https://binance-docs.github.io/apidocs/spot/cn/#k
     pub fn get_klines<S1, S2>(&self, symbol: S1, interval: S2) -> KlinesBuilder
-    where
-        S1: AsRef<str>,
-        S2: AsRef<str>,
+        where
+            S1: AsRef<str>,
+            S2: AsRef<str>,
     {
         KlinesBuilder::new(&self.client, symbol.as_ref().to_string(), interval.as_ref().to_string())
     }
@@ -109,14 +110,14 @@ impl Market {
     /// use binance::api::Binance;
     /// use binance::Spot;
     /// let spot:Spot = Binance::new(None,None);
-    /// let bulider = spot.market.get_ticker_24h("BTCUSDT").limit(50);
-    /// let depth = tokio_test::block_on(bulider.send());
+    /// let builder = spot.market.get_ticker_24h("BTCUSDT");
+    /// let depth = tokio_test::block_on(builder.send());
     /// assert!(depth.is_ok(), "{:?}", depth);
     /// ```
     /// https://binance-docs.github.io/apidocs/spot/cn/#24hr
     pub fn get_ticker_24h<S>(&self, symbol: S) -> Ticker24hBuilder
-    where
-        S: AsRef<str>,
+        where
+            S: AsRef<str>,
     {
         Ticker24hBuilder::new(&self.client, symbol.as_ref().to_string())
     }
@@ -127,8 +128,8 @@ impl Market {
     /// use binance::api::Binance;
     /// use binance::Spot;
     /// let spot:Spot = Binance::new(None,None);
-    /// let bulider = spot.market.get_ticker_24h_multi().symbols(vec!["BTCUSDT","ETHUSDT"]);
-    /// let depth = tokio_test::block_on(bulider.send());
+    /// let builder = spot.market.get_ticker_24h_multi().symbols(vec!["BTCUSDT","ETHUSDT"]);
+    /// let depth = tokio_test::block_on(builder.send());
     /// assert!(depth.is_ok(), "{:?}", depth);
     /// ```
     /// https://binance-docs.github.io/apidocs/spot/cn/#24hr
@@ -142,14 +143,14 @@ impl Market {
     /// use binance::api::Binance;
     /// use binance::Spot;
     /// let spot:Spot = Binance::new(None,None);
-    /// let bulider = spot.market.get_last_price("BTCUSDT");
-    /// let depth = tokio_test::block_on(bulider.send());
+    /// let builder = spot.market.get_last_price("BTCUSDT");
+    /// let depth = tokio_test::block_on(builder.send());
     /// assert!(depth.is_ok(), "{:?}", depth);
     /// ```
     /// https://binance-docs.github.io/apidocs/spot/cn/#8ff46b58de
     pub fn get_last_price<S>(&self, symbol: S) -> LastPriceBuilder
-    where
-        S: AsRef<str>,
+        where
+            S: AsRef<str>,
     {
         LastPriceBuilder::new(&self.client, symbol.as_ref().to_string())
     }
@@ -160,8 +161,8 @@ impl Market {
     /// use binance::api::Binance;
     /// use binance::Spot;
     /// let spot:Spot = Binance::new(None,None);
-    /// let bulider = spot.market.get_last_price_multi().symbols(vec!["BTCUSDT","ETHUSDT"]);
-    /// let depth = tokio_test::block_on(bulider.send());
+    /// let builder = spot.market.get_last_price_multi().symbols(vec!["BTCUSDT","ETHUSDT"]);
+    /// let depth = tokio_test::block_on(builder.send());
     /// assert!(depth.is_ok(), "{:?}", depth);
     /// ```
     /// https://binance-docs.github.io/apidocs/spot/cn/#8ff46b58de
@@ -176,14 +177,14 @@ impl Market {
     /// use binance::api::Binance;
     /// use binance::Spot;
     /// let spot:Spot = Binance::new(None,None);
-    /// let bulider = spot.market.get_book_ticker("BTCUSDT");
-    /// let depth = tokio_test::block_on(bulider.send());
+    /// let builder = spot.market.get_book_ticker("BTCUSDT");
+    /// let depth = tokio_test::block_on(builder.send());
     /// assert!(depth.is_ok(), "{:?}", depth);
     /// ```
     /// https://binance-docs.github.io/apidocs/spot/cn/#8ff46b58de
     pub fn get_book_ticker<S>(&self, symbol: S) -> BookTickerBuilder
-    where
-        S: AsRef<str>,
+        where
+            S: AsRef<str>,
     {
         BookTickerBuilder::new(&self.client, symbol.as_ref().to_string())
     }
@@ -194,15 +195,14 @@ impl Market {
     /// use binance::api::Binance;
     /// use binance::Spot;
     /// let spot:Spot = Binance::new(None,None);
-    /// let bulider = spot.market.get_last_price_multi().symbols(vec!["BTCUSDT","ETHUSDT"]);
-    /// let depth = tokio_test::block_on(bulider.send());
+    /// let builder = spot.market.get_last_price_multi().symbols(vec!["BTCUSDT","ETHUSDT"]);
+    /// let depth = tokio_test::block_on(builder.send());
     /// assert!(depth.is_ok(), "{:?}", depth);
     /// ```
     /// https://binance-docs.github.io/apidocs/spot/cn/#8ff46b58de
     pub fn get_book_ticker_multi(&self) -> BookTickerMultiBuilder {
         BookTickerMultiBuilder::new(&self.client)
     }
-
 }
 
 #[cfg(test)]
@@ -212,7 +212,7 @@ mod tests {
     use crate::Spot;
 
     #[test]
-    fn test_get_depth() {
+    fn market_test() {
         let spot: Spot = Binance::new_with_config(None, None, &Config::testnet());
         let builder = spot.market.get_depth("ETHUSDT").limit(5).send();
         let resp = tokio_test::block_on(builder);
@@ -230,7 +230,7 @@ mod tests {
         let resp = tokio_test::block_on(builder);
         println!("{:?}", resp.unwrap());
 
-        let builder = spot.market.get_klines("ETHUSDT","1m").limit(5).send();
+        let builder = spot.market.get_klines("ETHUSDT", "1m").limit(5).send();
         let resp = tokio_test::block_on(builder);
         println!("{:?}", resp.unwrap());
 
@@ -238,7 +238,7 @@ mod tests {
         let resp = tokio_test::block_on(builder);
         println!("{:?}", resp.unwrap());
 
-        let builder = spot.market.get_ticker_24h_multi().symbols(vec!["ETHUSDT".into(),"BTCUSDT".into()]).send();
+        let builder = spot.market.get_ticker_24h_multi().symbols(vec!["ETHUSDT", "BTCUSDT"]).send();
         let resp = tokio_test::block_on(builder);
         println!("{:?}", resp.unwrap());
 
@@ -246,7 +246,7 @@ mod tests {
         let resp = tokio_test::block_on(builder);
         println!("{:?}", resp.unwrap());
 
-        let builder = spot.market.get_last_price_multi().symbols(vec!["ETHUSDT".into(),"BTCUSDT".into()]).send();
+        let builder = spot.market.get_last_price_multi().symbols(vec!["ETHUSDT", "BTCUSDT"]).send();
         let resp = tokio_test::block_on(builder);
         println!("{:?}", resp.unwrap());
 
@@ -254,7 +254,7 @@ mod tests {
         let resp = tokio_test::block_on(builder);
         println!("{:?}", resp.unwrap());
 
-        let builder = spot.market.get_book_ticker_multi().symbols(vec!["ETHUSDT".into(),"BTCUSDT".into()]).send();
+        let builder = spot.market.get_book_ticker_multi().symbols(vec!["ETHUSDT", "BTCUSDT"]).send();
         let resp = tokio_test::block_on(builder);
         println!("{:?}", resp.unwrap());
         //assert!(depth.is_ok(), "{:?}", depth);

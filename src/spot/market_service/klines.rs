@@ -18,7 +18,7 @@ impl<'a> KlinesBuilder<'a> {
         Self {
             client,
             symbol,
-            interval: interval,
+            interval,
             start_time: None,
             end_time: None,
             limit: None,
