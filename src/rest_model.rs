@@ -311,6 +311,9 @@ pub struct UserDataStream {
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct Success {}
 
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct Empty {}
+
 #[derive(Debug, Serialize, Deserialize, Clone, PartialEq)]
 #[serde(rename_all = "camelCase")]
 #[serde(untagged)]

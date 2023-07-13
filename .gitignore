@@ -6,6 +6,7 @@ precommit_venv
 *.iml
 .idea
 .env
+.vscode
 
 release.json
 secrets
